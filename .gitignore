@@ -1,0 +1,4 @@
+venv
+.env
+house_listings.db
+__pycache__

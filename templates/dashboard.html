@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boshqaruv Paneli - Uy E'lonlari API</title>
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Boshqaruv Paneli 📊</h1>
+      <div>
+        <a href="/dashboard/profile" class="btn btn-success me-2">Profil 👤</a>
+        <a href="/logout" class="btn btn-danger">Chiqish 🚪</a>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <span class="fw-bold">Yuborish rejimi:</span>
+        <span class="badge bg-secondary">{{ sending_status }}</span>
+      </div>
+      <div>
+        <form action="/dashboard/toggle_sending" method="post" class="d-inline">
+          <button type="submit" class="btn btn-primary">Yuborishni o'chirish/yoqish</button>
+        </form>
+        <form action="/dashboard/refresh" method="post" class="d-inline">
+          <button type="submit" class="btn btn-info text-white">Yangilash</button>
+        </form>
+      </div>
+    </div>
+
+    <p class="mb-4 fs-5">Xush kelibsiz, <strong>{{ user.username }}</strong>! 👋</p>
+
+    <!-- Qidiruv formasi -->
+    <div class="mb-4">
+      <form method="get" action="/dashboard" class="row g-2">
+        <div class="col-auto flex-grow-1">
+          <input type="text" name="q" placeholder="Qidiruv..." value="{{ q }}" class="form-control">
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Qidiruv</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- E'lonlar jadvali -->
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>E'lon ID</th>
+            <th>Holat</th>
+            <th>Boost holati</th>
+            <th>Vaqt</th>
+            <th>Harakatlar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for listing in listings %}
+          <tr>
+            <td>{{ listing.post_id }}</td>
+            <td>
+              {% if listing.status == 'active' %}
+                <span class="text-primary">Faol</span>
+              {% elif listing.status == 'sent' %}
+                <span class="text-info">Yuborilgan</span>
+              {% elif listing.status == 'deleted' %}
+                <span class="text-danger">O'chirilgan</span>
+              {% elif listing.status == 'error' %}
+                <span class="text-warning">Xato</span>
+              {% else %}
+                <span class="text-secondary">{{ listing.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if listing.boost_status == 'boosted' %}
+                <span class="text-success fw-bold">Boost qilingan</span>
+              {% else %}
+                <span class="text-muted">Unboosted</span>
+              {% endif %}
+            </td>
+            <td>{{ listing.timestamp }}</td>
+            <td>
+              <form action="/dashboard/listings/{{ listing.post_id }}/toggle" method="post" class="d-inline">
+                {% if listing.boost_status == 'boosted' %}
+                  <button type="submit" class="btn btn-warning btn-sm">Boostni bekor qil ❌</button>
+                {% else %}
+                  <button type="submit" class="btn btn-success btn-sm">Boost qil 🚀</button>
+                {% endif %}
+              </form>
+              <form action="/dashboard/listings/{{ listing.post_id }}/delete" method="post" class="d-inline"
+                    onsubmit="return confirm('Ushbu e\'lonni o\'chirishga ishonchingiz komilmi?');">
+                <button type="submit" class="btn btn-danger btn-sm">O'chir 🗑️</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginatsiya -->
+    <nav>
+      <ul class="pagination justify-content-center">
+        {% for p in range(1, total_pages + 1) %}
+          {% if p == page %}
+            <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="/dashboard?page={{ p }}{% if q %}&q={{ q }}{% endif %}">{{ p }}</a></li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
