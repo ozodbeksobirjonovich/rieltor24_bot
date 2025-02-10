@@ -6,121 +6,35 @@
   <title>Sozlamalar - Uy E'lonlari API</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .group-row { margin-bottom: 10px; }
-  </style>
 </head>
 <body>
   <div class="container my-4">
     <h1 class="mb-4">Sozlamalar</h1>
-    {% if msg %}
-      <div class="alert alert-info text-center">{{ msg }}</div>
-    {% endif %}
     <form method="post" action="/dashboard/settings">
-      <!-- Source guruhlar -->
-      <div class="mb-4">
-        <label class="form-label fw-bold">Source Guruhlar</label>
-        <div id="sourceGroupsContainer">
-          {% for group in settings.source_groups %}
-          <div class="row group-row">
-            <div class="col-md-5">
-              <input type="text" name="source_group_id" class="form-control" placeholder="Guruh ID" value="{{ group.id }}" required>
-            </div>
-            <div class="col-md-5">
-              <input type="text" name="source_group_name" class="form-control" placeholder="Guruh nomi" value="{{ group.name }}" required>
-            </div>
-            <div class="col-md-2">
-              <button type="button" class="btn btn-danger remove-source-group">O'chirish</button>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <button type="button" id="addSourceGroup" class="btn btn-primary btn-sm mt-2">+ Qo'shish</button>
+      <div class="mb-3">
+        <label for="source_groups" class="form-label">Source Guruhlar (vergul bilan ajrating)</label>
+        <input type="text" class="form-control" id="source_groups" name="source_groups" value="{{ settings.source_groups }}">
       </div>
-
-      <!-- Target guruhlar -->
-      <div class="mb-4">
-        <label class="form-label fw-bold">Target Guruhlar</label>
-        <div id="targetGroupsContainer">
-          {% for group in settings.target_groups %}
-          <div class="row group-row">
-            <div class="col-md-5">
-              <input type="text" name="target_group_id" class="form-control" placeholder="Guruh ID" value="{{ group.id }}" required>
-            </div>
-            <div class="col-md-5">
-              <input type="text" name="target_group_name" class="form-control" placeholder="Guruh nomi" value="{{ group.name }}" required>
-            </div>
-            <div class="col-md-2">
-              <button type="button" class="btn btn-danger remove-target-group">O'chirish</button>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        <button type="button" id="addTargetGroup" class="btn btn-primary btn-sm mt-2">+ Qo'shish</button>
+      <div class="mb-3">
+        <label for="target_groups" class="form-label">Target Guruhlar (vergul bilan ajrating)</label>
+        <input type="text" class="form-control" id="target_groups" name="target_groups" value="{{ settings.target_groups }}">
       </div>
-
-      <!-- Qo'shimcha sozlamalar -->
       <div class="mb-3">
         <label for="forward_interval" class="form-label">Forward Interval (soniya)</label>
-        <input type="text" class="form-control" id="forward_interval" name="forward_interval" value="{{ settings.forward_interval }}" required>
+        <input type="text" class="form-control" id="forward_interval" name="forward_interval" value="{{ settings.forward_interval }}">
       </div>
       <div class="mb-3">
         <label for="boost_every_n" class="form-label">Boost Every N</label>
-        <input type="text" class="form-control" id="boost_every_n" name="boost_every_n" value="{{ settings.boost_every_n }}" required>
+        <input type="text" class="form-control" id="boost_every_n" name="boost_every_n" value="{{ settings.boost_every_n }}">
       </div>
       <div class="mb-3">
         <label for="admin_ids" class="form-label">Admin ID lar (vergul bilan ajrating)</label>
-        <input type="text" class="form-control" id="admin_ids" name="admin_ids" value="{{ settings.admin_ids }}" required>
+        <input type="text" class="form-control" id="admin_ids" name="admin_ids" value="{{ settings.admin_ids }}">
       </div>
-      <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="sending_enabled" name="sending_enabled" {% if settings.sending_enabled %}checked{% endif %}>
-        <label class="form-check-label" for="sending_enabled">
-          Bot yuborish rejimi (yoqilgan bo'lsa, e'lonlar avtomatik yuboriladi)
-        </label>
-      </div>
-
       <button type="submit" class="btn btn-primary">Saqlash</button>
       <a href="/dashboard" class="btn btn-secondary">Orqaga</a>
     </form>
   </div>
-
-  <!-- JavaScript: Source va Target guruh qatorlarini qo'shish/o'chirish -->
-  <script>
-    function addGroupRow(containerId, inputIdName, inputNameName, removeBtnClass) {
-      const container = document.getElementById(containerId);
-      const div = document.createElement('div');
-      div.className = "row group-row";
-      div.innerHTML = `
-        <div class="col-md-5">
-          <input type="text" name="${inputIdName}" class="form-control" placeholder="Guruh ID" required>
-        </div>
-        <div class="col-md-5">
-          <input type="text" name="${inputNameName}" class="form-control" placeholder="Guruh nomi" required>
-        </div>
-        <div class="col-md-2">
-          <button type="button" class="btn btn-danger ${removeBtnClass}">O'chirish</button>
-        </div>
-      `;
-      container.appendChild(div);
-    }
-
-    document.getElementById('addSourceGroup').addEventListener('click', function() {
-      addGroupRow('sourceGroupsContainer', 'source_group_id', 'source_group_name', 'remove-source-group');
-    });
-
-    document.getElementById('addTargetGroup').addEventListener('click', function() {
-      addGroupRow('targetGroupsContainer', 'target_group_id', 'target_group_name', 'remove-target-group');
-    });
-
-    document.addEventListener('click', function(e) {
-      if(e.target && e.target.classList.contains('remove-source-group')){
-        e.target.closest('.group-row').remove();
-      }
-      if(e.target && e.target.classList.contains('remove-target-group')){
-        e.target.closest('.group-row').remove();
-      }
-    });
-  </script>
   <!-- Bootstrap JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
