@@ -1,9 +1,11 @@
 import asyncio
 import logging
 import json
+import os
 import uvicorn
 from datetime import timedelta
 import datetime
+from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -20,6 +22,7 @@ from handlers import register_handlers
 from forwarding import forwarding_task
 import state
 from peewee import Cast
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 
@@ -177,40 +180,105 @@ async def profile_post(
     msg = "✅ Ma'lumotlar muvaffaqiyatli yangilandi!"
     return templates.TemplateResponse("profile.html", {"request": request, "user": current_user, "msg": msg})
 
-@app.post("/dashboard/listings/{post_id}/toggle")
-async def dashboard_toggle_boost_listing(post_id: str, current_user: User = Depends(get_current_user_from_cookie)):
-    listing = get_listing(post_id)
-    await delete_forwarded_messages(listing)
-    # Boost statusini almashtiramiz
-    listing.boost_status = "unboosted" if listing.boost_status == "boosted" else "boosted"
-    listing.save()
-    return RedirectResponse(url="/dashboard", status_code=303)
+# --- Yangi: Sozlamalar (Settings) sahifasi ---
+@app.get("/dashboard/settings", response_class=HTMLResponse)
+async def settings_get(request: Request, current_user: User = Depends(get_current_user_from_cookie)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Faqat adminlar bu bo'limga kira oladi.")
+    # Source guruhlar uchun: ID va nomlarini alohida ro'yxat shaklida tayyorlaymiz
+    source_ids = os.getenv("SOURCE_GROUPS", "").split(',')
+    source_names = os.getenv("SOURCE_GROUP_NAMES", "").split(',')
+    source_groups = []
+    for i, sid in enumerate(source_ids):
+        if sid.strip():
+            name = source_names[i].strip() if i < len(source_names) else ""
+            source_groups.append({"id": sid.strip(), "name": name})
+    # Target guruhlar uchun
+    target_ids = os.getenv("TARGET_GROUPS", "").split(',')
+    target_names = os.getenv("TARGET_GROUP_NAMES", "").split(',')
+    target_groups = []
+    for i, tid in enumerate(target_ids):
+        if tid.strip():
+            name = target_names[i].strip() if i < len(target_names) else ""
+            target_groups.append({"id": tid.strip(), "name": name})
+    settings = {
+        "admin_ids": os.getenv("ADMIN_IDS", ""),
+        "source_groups": source_groups,
+        "target_groups": target_groups,
+        "forward_interval": os.getenv("FORWARD_INTERVAL", ""),
+        "boost_every_n": os.getenv("BOOST_EVERY_N", ""),
+        "sending_enabled": state.SENDING_ENABLED
+    }
+    return templates.TemplateResponse("settings.html", {"request": request, "settings": settings, "msg": ""})
 
-@app.post("/dashboard/listings/{post_id}/delete")
-async def dashboard_delete_listing(post_id: str, current_user: User = Depends(get_current_user_from_cookie)):
-    listing = get_listing(post_id)
-    await delete_forwarded_messages(listing)
+@app.post("/dashboard/settings", response_class=HTMLResponse)
+async def settings_post(
+    request: Request,
+    current_user: User = Depends(get_current_user_from_cookie),
+    # Guruhlar ro'yxatini olish (bir xil nomli inputlar qaytariladi)
+    forward_interval: str = Form(...),
+    boost_every_n: str = Form(...),
+    admin_ids: str = Form(...),
+    sending_enabled: Optional[str] = Form(None),
+    # Source guruhlar: input nomlari "source_group_id" va "source_group_name"
+    source_group_id: List[str] = Form(...),
+    source_group_name: List[str] = Form(...),
+    # Target guruhlar: input nomlari "target_group_id" va "target_group_name"
+    target_group_id: List[str] = Form(...),
+    target_group_name: List[str] = Form(...)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Faqat adminlar bu amalni bajarishi mumkin.")
+    
+    # Yangi sozlamalarni tayyorlaymiz
+    new_source_ids = [sid.strip() for sid in source_group_id if sid.strip()]
+    new_source_names = [sname.strip() for sname in source_group_name if sname.strip()]
+    new_target_ids = [tid.strip() for tid in target_group_id if tid.strip()]
+    new_target_names = [tname.strip() for tname in target_group_name if tname.strip()]
+    
+    # .env faylini yangilash uchun yangi qiymatlarni tayyorlaymiz
+    env_vars = {
+        "BOT_TOKEN": os.getenv("BOT_TOKEN"),
+        "ADMIN_IDS": admin_ids,
+        "SOURCE_GROUPS": ",".join(new_source_ids),
+        "SOURCE_GROUP_NAMES": ",".join(new_source_names),
+        "TARGET_GROUPS": ",".join(new_target_ids),
+        "TARGET_GROUP_NAMES": ",".join(new_target_names),
+        "FORWARD_INTERVAL": forward_interval,
+        "BOOST_EVERY_N": boost_every_n,
+        "DEFAULT_ADMIN_USERNAME": os.getenv("DEFAULT_ADMIN_USERNAME"),
+        "DEFAULT_ADMIN_PASSWORD": os.getenv("DEFAULT_ADMIN_PASSWORD")
+    }
+    
+    # .env faylini yangilaymiz (butun faylni qayta yozamiz)
     try:
-        await global_bot.delete_message(chat_id=listing.source_group_id, message_id=listing.source_message_id)
+        with open(".env", "w") as f:
+            for key, value in env_vars.items():
+                f.write(f"{key}={value}\n")
     except Exception as e:
-        logging.error(f"❌ E'lon {post_id} uchun manba xabarni o'chirishda xato: {e}")
-    listing.delete_instance()
-    return RedirectResponse(url="/dashboard", status_code=303)
+        logging.error(f".env faylini yozishda xato: {e}")
+        return templates.TemplateResponse("settings.html", {"request": request, "settings": env_vars, "msg": "❌ Sozlamalarni saqlashda xato yuz berdi."})
+    
+    # Yangi .env o'zgaruvchilarini yuklaymiz
+    load_dotenv(override=True)
+    
+    # Global config o'zgaruvchilarini ham yangilaymiz
+    import config
+    config.ADMIN_IDS = [int(x) for x in admin_ids.split(',') if x.strip()]
+    config.SOURCE_GROUPS = [int(x) for x in new_source_ids if x.strip()]
+    config.SOURCE_GROUP_NAMES = new_source_names
+    config.TARGET_GROUPS = [int(x) for x in new_target_ids if x.strip()]
+    config.TARGET_GROUP_NAMES = new_target_names
+    config.FORWARD_INTERVAL = int(forward_interval)
+    config.BOOST_EVERY_N = int(boost_every_n)
+    
+    # Botning yuborish rejimini yangilaymiz
+    state.SENDING_ENABLED = (sending_enabled == "on")
+    
+    msg = "✅ Sozlamalar muvaffaqiyatli yangilandi!"
+    return RedirectResponse(url="/dashboard/settings", status_code=303)
 
-@app.post("/dashboard/toggle_sending")
-async def dashboard_toggle_sending(current_user: User = Depends(get_current_user_from_cookie)):
-    if not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Faqat adminlar bu amalni bajarishi mumkin.")
-    state.SENDING_ENABLED = not state.SENDING_ENABLED
-    return RedirectResponse(url="/dashboard", status_code=303)
-
-@app.post("/dashboard/refresh")
-async def dashboard_refresh(current_user: User = Depends(get_current_user_from_cookie)):
-    if not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Faqat adminlar bu amalni bajarishi mumkin.")
-    state.REFRESH_REQUESTED = True
-    return RedirectResponse(url="/dashboard", status_code=303)
-
+# --- API endpointlar ---
 @app.get("/api/listings")
 def api_get_listings(current_user: User = Depends(get_current_user)):
     listings = HouseListing.select()

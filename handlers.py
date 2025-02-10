@@ -126,7 +126,9 @@ async def start_command(message: types.Message):
     else:
         keyboard = InlineKeyboardMarkup()
         for group_id in SOURCE_GROUPS:
-            keyboard.add(InlineKeyboardButton(text=f"Guruh {group_id}", url="https://t.me/your_source_group_link"))
+            keyboard.add(
+                InlineKeyboardButton(text=f"Guruh {group_id}", url="https://t.me/your_source_group_link")
+            )
         welcome_message = "👋 Xush kelibsiz! Iltimos, uy e'lonlarini ko'rish uchun manba guruhni tanlang:"
         await message.answer(welcome_message, reply_markup=keyboard)
 
