@@ -28,15 +28,15 @@ class HouseListing(Model):
     post_id = CharField()
     post_url = CharField()
     source_message_id = IntegerField(null=True)
-    status = CharField(default="active")  # active, sent, deleted, error
-    boost_status = CharField(default="unboosted")  # yangi ustun: boosted, unboosted
+    status = CharField(default="active")  # "active" yoki "sent" — faqat odatiy eʼlonlar uchun
+    boost_status = CharField(null=True)    # "boosted" bo'lgan postlar uchun (boost qilingan eʼlonlarda qiymati "boosted")
     source_group_id = BigIntegerField()
     timestamp = DateTimeField(default=datetime.datetime.now)
     media_group_id = CharField(null=True)
     media_group_data = TextField(null=True)
     caption = TextField(null=True)
     error_details = TextField(null=True)
-    forwarded_message_ids = TextField(null=True)  # JSON formatida
+    forwarded_message_ids = TextField(null=True)  # JSON formatida saqlanadi
 
     class Meta:
         database = db
