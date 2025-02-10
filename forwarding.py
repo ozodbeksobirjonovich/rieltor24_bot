@@ -29,7 +29,18 @@ async def forward_listing(bot: Bot, listing: HouseListing):
                         continue
                     # Faqat birinchi media elementiga (agar mavjud bo'lsa) yozuv qo'shamiz
                     if i == 0 and listing.caption:
-                        media.caption = listing.caption
+                        media.caption = listing.caption + """\nhttps://t.me/navoiy_1x_uylar
+https://t.me/navoiy_1_2x_uylar
+https://t.me/navoiy_2x_uylar
+https://t.me/navoiy_2_3x_uylar
+https://t.me/navoiy_3x_uylar
+https://t.me/navoiy_3_4x_uylar
+https://t.me/navoiy_4x_uylar
+https://t.me/navoiy_4_5x_uylar
+https://t.me/navoiy_5x_uylar
+https://t.me/navoiy_reklama_uylar
+https://t.me/navoiy_hovli_kottedj
+https://t.me/navoiy_ijaragaa_uylar"""
                         media.parse_mode = "HTML"
                     input_media.append(media)
                 messages = await bot.send_media_group(chat_id=target, media=input_media)
