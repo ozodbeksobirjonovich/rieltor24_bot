@@ -125,8 +125,27 @@ async def start_command(message: types.Message):
         await message.answer(stats_message, parse_mode="HTML")
     else:
         keyboard = InlineKeyboardMarkup()
-        for group_id in SOURCE_GROUPS:
-            keyboard.add(InlineKeyboardButton(text=f"Guruh {group_id}", url="https://t.me/your_source_group_link"))
+
+        source_groups = [
+            "НАВОИЙ ХОВЛИ/КОТТЕДЖЛАР",
+            "НАВОИЙ 4 ХОНА 5 ХОНА КИЛИНГАН УЙЛАР",
+            "НАВОИЙ 5 ХОНАЛИ УЙЛАР",
+            "НАВОИЙ 4 ХОНАЛИ УЙЛАР",
+            "НАВОИЙ 3 ХОНАЛИ УЙЛАР",
+            "НАВОИЙ ИЖАРА УЙЛАР",
+            "НАВОИЙ 1 ХОНАЛИ УЙЛАР",
+            "НАВОИЙ 1 ХОНА 2 ХОНА КИЛИНГАН УЙЛАР",
+            "НАВОИЙ 2 ХОНА 3 ХОНА КИЛИНГАН УЙЛАР",
+            "НАВОИЙ 3 ХОНА 4 ХОНА КИЛИНГАН УЙЛАР",
+            "НАВОИЙ УЙЛАР РЕКЛАМАСИ",
+            "НАВОИЙ 2 ХОНАЛИ УЙЛАР"
+        ]
+
+        group_usernames = ["@navoiy_hovli_kottedj","@navoiy_4_5x_uylar","@navoiy_5x_uylar","@navoiy_4x_uylar","@navoiy_3x_uylar","@navoiy_ijaragaa_uylar","@navoiy_1x_uylar","@navoiy_1_2x_uylar","@navoiy_2_3x_uylar","@navoiy_3_4x_uylar","@navoiy_reklama_uylar","@navoiy_2x_uylar"]
+
+        for name, group_username in zip(source_groups, group_usernames):
+            keyboard.add(InlineKeyboardButton(text=name, url=f"https://t.me/{group_username[1:]}"))
+
         welcome_message = "👋 Xush kelibsiz! Iltimos, uy e'lonlarini ko'rish uchun manba guruhni tanlang:"
         await message.answer(welcome_message, reply_markup=keyboard)
 
